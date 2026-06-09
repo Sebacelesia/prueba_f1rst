@@ -1,5 +1,9 @@
+import json
+from pathlib import Path
+
 import mlflow
 import mlflow.sklearn
+from mlflow import MlflowClient
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
@@ -16,15 +20,25 @@ from src.preprocessing.pipeline import build_pipeline, build_preprocessor
 
 DATA_PATH = 'data/attrition_dataset.pkl'
 EXPERIMENT_NAME = 'attrition_prediction'
+MODEL_NAME = 'attrition_model'
+ARTIFACTS_DIR = Path('artifacts')
+TRACKING_URI = 'sqlite:///mlflow.db'
 
 
 def main():
+    ARTIFACTS_DIR.mkdir(exist_ok=True)
+    mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT_NAME)
 
     # 1. Carga y preparación del dataset
     df = load_data(DATA_PATH)
     df = drop_useless(df)
-    df = add_features(df)
+
+    income_by_level = df.groupby('JobLevel')['MonthlyIncome'].mean().to_dict()
+    with open(ARTIFACTS_DIR / 'income_by_level.json', 'w') as f:
+        json.dump(income_by_level, f)
+
+    df = add_features(df, income_by_level=income_by_level)
 
     X = df.drop(columns='Attrition')
     y = (df['Attrition'] == 'Yes').astype(int)
@@ -65,7 +79,7 @@ def main():
             mlflow.log_params({k: str(v) for k, v in model.get_params().items()})
             loggable = {k: v for k, v in {**metrics, **cv_metrics}.items() if k != 'report'}
             mlflow.log_metrics(loggable)
-            mlflow.sklearn.log_model(pipeline, 'model')
+            mlflow.sklearn.log_model(pipeline, 'model', registered_model_name=MODEL_NAME)
 
             print(f"  Accuracy:  {metrics['accuracy']} | Train Accuracy: {metrics.get('train_accuracy', 'N/A')}")
             print(f"  AUC-ROC:   {metrics['auc_roc']}")
@@ -76,8 +90,16 @@ def main():
                 best_auc = metrics['auc_roc']
                 best_run_id = run.info.run_id
 
+    # 5. Promover el mejor modelo como "champion" en el registry
+    client = MlflowClient(tracking_uri=TRACKING_URI)
+    versions = client.search_model_versions(f"name='{MODEL_NAME}'")
+    best_version = next(v for v in versions if v.run_id == best_run_id)
+
+    client.set_registered_model_alias(MODEL_NAME, "champion", best_version.version)
+
     print(f"\n{'='*50}")
     print(f"Mejor modelo -> run_id: {best_run_id}  (AUC-ROC: {best_auc})")
+    print(f"Registrado en MLflow como '{MODEL_NAME}' version {best_version.version} @champion")
     return best_run_id
 
 

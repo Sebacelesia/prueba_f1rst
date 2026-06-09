@@ -7,7 +7,7 @@ def drop_useless(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=[c for c in COLS_TO_DROP if c in df.columns])
 
 
-def add_features(df: pd.DataFrame) -> pd.DataFrame:
+def add_features(df: pd.DataFrame, income_by_level: dict = None) -> pd.DataFrame:
     df = df.copy()
 
     sat_cols = ['JobSatisfaction', 'EnvironmentSatisfaction', 'WorkLifeBalance', 'JobInvolvement']
@@ -17,8 +17,10 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
 
     df['promotion_stagnation'] = df['YearsSinceLastPromotion'] / (df['YearsAtCompany'] + 1)
 
-    avg_income_by_level = df.groupby('JobLevel')['MonthlyIncome'].transform('mean')
-    df['income_vs_level'] = (df['MonthlyIncome'] - avg_income_by_level) / avg_income_by_level
+    if income_by_level is None:
+        income_by_level = df.groupby('JobLevel')['MonthlyIncome'].mean().to_dict()
+    avg = df['JobLevel'].map(income_by_level)
+    df['income_vs_level'] = (df['MonthlyIncome'] - avg) / avg
 
     df['manager_loyalty_ratio'] = df['YearsWithCurrManager'] / (df['YearsAtCompany'] + 1)
 
