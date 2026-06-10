@@ -21,6 +21,7 @@ Proyecto de ciencia de datos para predecir rotación de empleados (Attrition) a 
 
 ### 2.Estructura del proyecto
 
+```text
 proyecto_first/
 ├── data/
 │   └── attrition_dataset.pkl       # Dataset de empleados
