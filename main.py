@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import mlflow
@@ -21,8 +22,8 @@ from src.preprocessing.pipeline import build_pipeline, build_preprocessor
 DATA_PATH = 'data/attrition_dataset.pkl'
 EXPERIMENT_NAME = 'attrition_prediction'
 MODEL_NAME = 'attrition_model'
-ARTIFACTS_DIR = Path('artifacts')
-TRACKING_URI = 'sqlite:///mlflow.db'
+ARTIFACTS_DIR = Path(os.getenv('ARTIFACTS_DIR', 'artifacts'))
+TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db')
 
 
 def main():
@@ -51,7 +52,7 @@ def main():
 
     # 2. Tuning de XGBoost con Optuna
     print("Tuning XGBoost con Optuna (100 trials)...")
-    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=100)
+    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=50)
 
     # 3. Definición de modelos a entrenar
     models = {
@@ -62,6 +63,7 @@ def main():
 
     best_run_id = None
     best_auc = 0.0
+    best_model = None
 
     # 4. Loop genérico: entrena, evalúa y loguea cada modelo en MLflow
     for name, model in models.items():
@@ -89,8 +91,21 @@ def main():
             if metrics['auc_roc'] > best_auc:
                 best_auc = metrics['auc_roc']
                 best_run_id = run.info.run_id
+                best_model = model
 
-    # 5. Promover el mejor modelo como "champion" en el registry
+    # 5. Reentrenar el mejor modelo con todos los datos (X completo)
+    print(f"\n{'='*50}")
+    print("Reentrenando modelo final con todos los datos...")
+    with mlflow.start_run(run_name='final_model_full_data') as run:
+        preprocessor_final = build_preprocessor(num_features)
+        pipeline_final = build_pipeline(best_model, preprocessor_final)
+        pipeline_final = train_model(pipeline_final, X, y)
+        mlflow.log_params({k: str(v) for k, v in best_model.get_params().items()})
+        mlflow.log_param('trained_on', 'full_dataset')
+        mlflow.sklearn.log_model(pipeline_final, 'model', registered_model_name=MODEL_NAME)
+        best_run_id = run.info.run_id
+
+    # 6. Promover el modelo final como "champion" en el registry
     client = MlflowClient(tracking_uri=TRACKING_URI)
     versions = client.search_model_versions(f"name='{MODEL_NAME}'")
     best_version = next(v for v in versions if v.run_id == best_run_id)

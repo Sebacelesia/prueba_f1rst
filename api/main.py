@@ -1,7 +1,9 @@
 import json
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import mlflow
 import mlflow.sklearn
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -10,8 +12,8 @@ from api.schemas import EmployeeInput, PredictionOutput
 from src.features.engineering import add_features
 
 MODEL_URI = 'models:/attrition_model@champion'
-INCOME_PATH = Path('artifacts/income_by_level.json')
-TRACKING_URI = 'sqlite:///mlflow.db'
+INCOME_PATH = Path(os.getenv('ARTIFACTS_DIR', 'artifacts')) / 'income_by_level.json'
+TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db')
 
 model = None
 income_by_level = None

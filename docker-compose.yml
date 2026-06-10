@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  train:
+    build: .
+    command: python main.py
+    volumes:
+      - mlflow_data:/app/mlflow_data
+      - ./data:/app/data:ro
+    environment:
+      - MLFLOW_TRACKING_URI=sqlite:////app/mlflow_data/mlflow.db
+      - ARTIFACTS_DIR=/app/mlflow_data/artifacts
+
+  api:
+    build: .
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - mlflow_data:/app/mlflow_data
+    environment:
+      - MLFLOW_TRACKING_URI=sqlite:////app/mlflow_data/mlflow.db
+      - ARTIFACTS_DIR=/app/mlflow_data/artifacts
+    depends_on:
+      train:
+        condition: service_completed_successfully
+
+  mlflow:
+    build: .
+    command: mlflow ui --backend-store-uri sqlite:////app/mlflow_data/mlflow.db --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/app/mlflow_data
+    depends_on:
+      train:
+        condition: service_completed_successfully
+
+volumes:
+  mlflow_data:

@@ -58,7 +58,7 @@ def tune_xgboost(X_train, y_train, num_features: list, n_trials: int = 100) -> d
         }
         model = XGBClassifier(**params, random_state=42, eval_metric='logloss')
         pipeline = build_pipeline(model, build_preprocessor(num_features))
-        scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='roc_auc', n_jobs=-1)
+        scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='roc_auc', n_jobs=1)
         return scores.mean()
 
     study = optuna.create_study(direction='maximize')
