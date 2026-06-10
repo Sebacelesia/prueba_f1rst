@@ -1,7 +1,7 @@
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 CAT_FEATURES = ['BusinessTravel', 'Department', 'EducationField', 'Gender', 'JobRole', 'MaritalStatus']
 
@@ -10,7 +10,10 @@ def build_preprocessor(num_features: list, cat_features: list = None) -> ColumnT
     if cat_features is None:
         cat_features = CAT_FEATURES
 
-    num_transformer = SimpleImputer(strategy='median')
+    num_transformer = Pipeline([
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
 
     cat_transformer = Pipeline([
         ('imputer', SimpleImputer(strategy='most_frequent')),
