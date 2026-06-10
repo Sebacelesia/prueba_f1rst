@@ -61,8 +61,8 @@ def main():
     num_features = X.select_dtypes(include='number').columns.tolist()
 
     # 2. Tuning de XGBoost con Optuna
-    print("Tuning XGBoost con Optuna (1 trial)...")
-    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=1)
+    print("Tuning XGBoost con Optuna (3 trials)...")
+    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=3)
 
     # 3. Definición de modelos a entrenar
     models = {

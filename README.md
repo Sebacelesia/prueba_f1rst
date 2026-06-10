@@ -25,7 +25,7 @@ proyecto_first/
 ├── data/
 │   └── attrition_dataset.pkl       # Dataset de empleados
 ├── entrega_obligatoria/
-│   └── best_model.plk       # Mejor modelo
+│   └── best_model.pkl       # Mejor modelo
 │   └── entrega_final.ipynb       # Notebbok de entrega final, conteiene todo el eda, feature_eng y models
 ├── mlruns/                          # Se crea automáticamente al correr el pipeline
 ├── notebooks/
