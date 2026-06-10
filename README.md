@@ -86,11 +86,6 @@ Opcion B - Docker (Recomendado)
 
 Requiere tener Docker y Docker Compose instalados
 
-- 1) Construir y levantar los servicios
-        docker-compose up --build
-
-Opción B — Docker
-Requiere tener Docker y Docker Compose instalados. No requiere crear entorno virtual ni instalar dependencias manualmente.
 
 1) Construir y levantar los servicios
 docker-compose up --build
@@ -120,6 +115,7 @@ La API expone dos endpoints:
 Se le pasa un JSON con los datos crudos del empleado. La API aplica el feature engineering internamente antes de realizar la predicción, por lo que no es necesario calcular ninguna variable derivada.
 
 Request ex:
+```text
 {
   "hrs": 8.5,
   "absences": 10,
@@ -148,12 +144,15 @@ Request ex:
   "YearsSinceLastPromotion": 1,
   "YearsWithCurrManager": 2
 }
+```
+```text
 Response
 {
   "prediction": 1,
   "prediction_label": "Yes",
   "probability": 0.9888
 }
+```
 
 #### Aclaracion: 
 - Para reducir el tiempo de construcción, el tuning de hiperparámetros con Optuna está configurado con 3 trials (n_trials=3). 
