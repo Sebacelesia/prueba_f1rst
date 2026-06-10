@@ -29,7 +29,17 @@ TRACKING_URI = os.getenv('MLFLOW_TRACKING_URI', 'sqlite:///mlflow.db')
 def main():
     ARTIFACTS_DIR.mkdir(exist_ok=True)
     mlflow.set_tracking_uri(TRACKING_URI)
+
+    # Crear experimento con artifact_location explícita en el volumen compartido.
+    # mlflow.set_experiment no acepta artifact_location; hay que crearlo via cliente.
+    artifact_root = os.getenv('MLFLOW_DEFAULT_ARTIFACT_ROOT', './mlruns')
+    _client = MlflowClient(tracking_uri=TRACKING_URI)
+    existing = _client.get_experiment_by_name(EXPERIMENT_NAME)
+    if existing is None:
+        _client.create_experiment(EXPERIMENT_NAME, artifact_location=artifact_root)
     mlflow.set_experiment(EXPERIMENT_NAME)
+    exp = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
+    print(f"Artifact location: {exp.artifact_location}")
 
     # 1. Carga y preparación del dataset
     df = load_data(DATA_PATH)
@@ -51,8 +61,8 @@ def main():
     num_features = X.select_dtypes(include='number').columns.tolist()
 
     # 2. Tuning de XGBoost con Optuna
-    print("Tuning XGBoost con Optuna (100 trials)...")
-    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=50)
+    print("Tuning XGBoost con Optuna (1 trial)...")
+    best_params = tune_xgboost(X_train, y_train, num_features=num_features, n_trials=1)
 
     # 3. Definición de modelos a entrenar
     models = {
@@ -81,7 +91,7 @@ def main():
             mlflow.log_params({k: str(v) for k, v in model.get_params().items()})
             loggable = {k: v for k, v in {**metrics, **cv_metrics}.items() if k != 'report'}
             mlflow.log_metrics(loggable)
-            mlflow.sklearn.log_model(pipeline, 'model', registered_model_name=MODEL_NAME)
+            mlflow.sklearn.log_model(pipeline, name='model', registered_model_name=MODEL_NAME)
 
             print(f"  Accuracy:  {metrics['accuracy']} | Train Accuracy: {metrics.get('train_accuracy', 'N/A')}")
             print(f"  AUC-ROC:   {metrics['auc_roc']}")
@@ -102,7 +112,7 @@ def main():
         pipeline_final = train_model(pipeline_final, X, y)
         mlflow.log_params({k: str(v) for k, v in best_model.get_params().items()})
         mlflow.log_param('trained_on', 'full_dataset')
-        mlflow.sklearn.log_model(pipeline_final, 'model', registered_model_name=MODEL_NAME)
+        mlflow.sklearn.log_model(pipeline_final, name='model', registered_model_name=MODEL_NAME)
         best_run_id = run.info.run_id
 
     # 6. Promover el modelo final como "champion" en el registry

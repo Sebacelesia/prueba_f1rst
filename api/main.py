@@ -7,6 +7,7 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from mlflow.tracking import MlflowClient
 
 from api.schemas import EmployeeInput, PredictionOutput
 from src.features.engineering import add_features
@@ -27,6 +28,9 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("Artifacts no encontrados. Correr primero: python main.py")
 
     mlflow.set_tracking_uri(TRACKING_URI)
+    _client = MlflowClient(tracking_uri=TRACKING_URI)
+    _version = _client.get_model_version_by_alias('attrition_model', 'champion')
+    print(f"Model source URI: {_version.source}")
     model = mlflow.sklearn.load_model(MODEL_URI)
 
     with open(INCOME_PATH) as f:

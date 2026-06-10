@@ -59,10 +59,12 @@ def tune_xgboost(X_train, y_train, num_features: list, n_trials: int = 100) -> d
         model = XGBClassifier(**params, random_state=42, eval_metric='logloss')
         pipeline = build_pipeline(model, build_preprocessor(num_features))
         scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring='roc_auc', n_jobs=1)
-        return scores.mean()
+        auc = scores.mean()
+        print(f'  Trial {trial.number + 1}/{n_trials} - AUC: {auc:.4f}', flush=True)
+        return auc
 
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
 
     print(f'Best AUC-ROC (CV): {study.best_value:.4f}')
     return study.best_params

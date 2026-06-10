@@ -9,6 +9,7 @@ services:
       - ./data:/app/data:ro
     environment:
       - MLFLOW_TRACKING_URI=sqlite:////app/mlflow_data/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/app/mlflow_data/mlruns
       - ARTIFACTS_DIR=/app/mlflow_data/artifacts
 
   api:
@@ -20,6 +21,7 @@ services:
       - mlflow_data:/app/mlflow_data
     environment:
       - MLFLOW_TRACKING_URI=sqlite:////app/mlflow_data/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/app/mlflow_data/mlruns
       - ARTIFACTS_DIR=/app/mlflow_data/artifacts
     depends_on:
       train:
@@ -27,7 +29,7 @@ services:
 
   mlflow:
     build: .
-    command: mlflow ui --backend-store-uri sqlite:////app/mlflow_data/mlflow.db --host 0.0.0.0 --port 5000
+    command: mlflow ui --backend-store-uri sqlite:////app/mlflow_data/mlflow.db --artifacts-destination /app/mlflow_data/mlruns --host 0.0.0.0 --port 5000
     ports:
       - "5000:5000"
     volumes:
