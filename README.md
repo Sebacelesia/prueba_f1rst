@@ -19,7 +19,7 @@ Proyecto de ciencia de datos para predecir rotación de empleados (Attrition) a 
 - Las dependencias del proyecto están definidas en requirements.txt
 (ej.: pandas, scikit-learn, xgboost, mlflow, fastapi, etc.).
 
-### 2.Estructura del proyecto
+### 2. Estructura del proyecto
 
 ```text
 proyecto_first/
@@ -52,7 +52,7 @@ proyecto_first/
 ├── docker-compose.yml
 ├── .dockerignore
 └── requirements.txt
-
+```
 Comentario: Se crea la carpeta entrega_obligatoria que conteine los dos archivos que se piden enetregar. Entrega_final.ipynb es una union de los tres notebooks (eda, feature_eng y models). Best_model.plk es el mismo en ambas carpetas.
 
 
